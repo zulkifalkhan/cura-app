@@ -1,75 +1,116 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import React, { useState } from 'react';
+import {
+  Text,
+  View,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  FlatList,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen() {
+  const [query, setQuery] = useState('');
+
+  const hospitals = [
+    { id: '1', name: 'CityCare Hospital', distance: '2.1 km', email: 'info@citycare.com' },
+    { id: '2', name: 'Green Health Clinic', distance: '3.5 km', email: 'contact@greenhealth.org' },
+    { id: '3', name: 'Wellness Center', distance: '5.2 km', email: 'support@wellness.com' },
+  ];
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Welcome to Cura AI</Text>
+      <Text style={styles.subtitle}>Your personal AI healthcare agent.</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Describe your symptoms or ask a question..."
+        value={query}
+        onChangeText={setQuery}
+        multiline
+      />
+
+      <TouchableOpacity style={styles.audioButton}>
+        <Ionicons name="mic" size={28} color="#fff" />
+        <Text style={styles.audioText}>Speak to AI</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.sectionTitle}>Nearby Hospitals</Text>
+      <FlatList
+        data={hospitals}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>{item.name}</Text>
+            <Text style={styles.cardText}>Distance: {item.distance}</Text>
+            <Text style={styles.cardText}>Email: {item.email}</Text>
+          </View>
+        )}
+      />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    padding: 20,
+    backgroundColor: '#fff',
+    gap: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#19949B',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#555',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#19949B',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  audioButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    backgroundColor: '#19949B',
+    padding: 12,
+    borderRadius: 12,
+    justifyContent: 'center',
+    gap: 10,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  audioText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 20,
+    color: '#19949B',
+  },
+  card: {
+    backgroundColor: '#E8F6F7',
+    padding: 16,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#19949B',
+  },
+  cardText: {
+    fontSize: 14,
+    color: '#333',
+    marginTop: 4,
   },
 });
