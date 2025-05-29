@@ -8,20 +8,27 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 
 function MainStack() {
-  const { isLoggedIn } = useAuth();
 
   return (
     <Stack>
-      {isLoggedIn ? (
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      ) : (
-        <Stack.Screen name="/SignIn" options={{ headerShown: false }} />
-      )}
-      <Stack.Screen name="/SignUp" options={{ headerShown: false }} />
+      {/* Always define screens only once */}
+      <Stack.Screen
+        name="(tabs)"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SignIn"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SignUp"
+        options={{ headerShown: false }}
+      />
       <Stack.Screen name="+not-found" />
     </Stack>
   );
 }
+
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
