@@ -1,32 +1,44 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from 'expo-router';
-
-
+import { signUp } from '@/services/AuthService';
 
 export default function SignUpScreen() {
-    const navigation = useNavigation();
-  
-    return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Create an Account</Text>
-        <TextInput style={styles.input} placeholder="Name" />
-        <TextInput style={styles.input} placeholder="Email" keyboardType="email-address" />
-        <TextInput style={styles.input} placeholder="Password" secureTextEntry />
-  
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Sign Up</Text>
-        </TouchableOpacity>
-  
-        <Text style={styles.bottomText}>
-          Already have an account?{' '}
-          <Text style={styles.link} onPress={() => navigation.navigate('SignIn' as never)}>
-            Sign In
-          </Text>
+  const navigation = useNavigation();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSignUp = async () => {
+    try {
+      await signUp(name, email, password);
+      // Navigate to home or sign-in
+    } catch (error: any) {
+      Alert.alert("Sign Up Error", error.message);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Create an Account</Text>
+      <TextInput style={styles.input} placeholder="Name" value={name} onChangeText={setName} />
+      <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
+      <TextInput style={styles.input} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
+
+      <TouchableOpacity style={styles.button} onPress={handleSignUp}>
+        <Text style={styles.buttonText}>Sign Up</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.bottomText}>
+        Already have an account?{' '}
+        <Text style={styles.link} onPress={() => navigation.navigate('SignIn' as never)}>
+          Sign In
         </Text>
-      </View>
-    );
-  }
+      </Text>
+    </View>
+  );
+}
+
   
 
   const styles = StyleSheet.create({

@@ -5,12 +5,13 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 function MainStack() {
 
   return (
-    <Stack>
+    <Stack
+    >
       {/* Always define screens only once */}
       <Stack.Screen
         name="(tabs)"

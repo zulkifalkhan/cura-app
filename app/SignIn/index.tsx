@@ -1,21 +1,33 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from 'expo-router';
+import { signIn } from '@/services/AuthService';
 
 export default function SignIn() {
   const navigation = useNavigation();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSignIn = async () => {
+    try {
+      await signIn(email, password);
+      // Navigate to home or dashboard
+    } catch (error: any) {
+      Alert.alert("Sign In Error", error.message);
+    }
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome Back 👋</Text>
-      <TextInput style={styles.input} placeholder="Email" keyboardType="email-address" />
-      <TextInput style={styles.input} placeholder="Password" secureTextEntry />
+      <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
+      <TextInput style={styles.input} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
 
       <TouchableOpacity>
         <Text style={styles.forgot}>Forgot Password?</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button}>
+      <TouchableOpacity style={styles.button} onPress={handleSignIn}>
         <Text style={styles.buttonText}>Sign In</Text>
       </TouchableOpacity>
 
@@ -28,6 +40,7 @@ export default function SignIn() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#fff' },
