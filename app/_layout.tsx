@@ -6,6 +6,9 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider } from '@/contexts/AuthContext';
+import SignIn from './SignIn';
+import SignUpScreen from './SignUp';
+import OnboardingSlider from './Onboarding';
 
 function MainStack() {
 
@@ -40,11 +43,12 @@ export default function RootLayout() {
   if (!loaded) return null;
 
   return (
-    <AuthProvider>
+    // <AuthProvider>
+    <>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <MainStack />
+        <MainStack onDone={()=> {}} />
         <StatusBar style="auto" />
       </ThemeProvider>
-    </AuthProvider>
+      </>
   );
 }
