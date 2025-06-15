@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function Index() {
   // const { user } = useAuth();
 
-  if (true) {
+  if (false) {
     return <Redirect href="/SignIn" />;
   }
 
