@@ -6,15 +6,17 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider } from '@/contexts/AuthContext';
-import SignIn from './SignIn';
-import SignUpScreen from './SignUp';
-import OnboardingSlider from './Onboarding';
 import React from 'react';
 
 function MainStack() {
 
   return (
     <Stack
+    screenOptions={
+      {
+        headerShown:false
+      }
+    }
     >
       <Stack.Screen
         name="(tabs)"
@@ -28,6 +30,13 @@ function MainStack() {
         name="SignUp"
         options={{ headerShown: false }}
       />
+       <Stack.Screen
+        name="UserOnboarding"
+        options={{
+          headerShown: false,
+        }}
+      />
+      
       <Stack.Screen name="+not-found" />
     </Stack>
   );

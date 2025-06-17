@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { useNavigation } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { signUp } from '@/services/AuthService';
 
 const SignUp = () => {
@@ -14,7 +14,7 @@ const SignUp = () => {
       console.log("Signing up with:", name, email);
       await signUp(name, email, password);
       console.log("Sign up success!");
-      Alert.alert("Success", "Account created successfully!");
+      router.push('/UserOnbaording');
       // Optionally navigate
     } catch (error: any) {
       console.error("Sign up error:", error);
@@ -62,7 +62,7 @@ const SignUp = () => {
 
       <Text style={styles.bottomText}>
         Already have an account?{' '}
-        <Text style={styles.link} onPress={() => navigation.navigate('SignIn' as never)}>
+        <Text style={styles.link} onPress={() => router.push('/SignIn')}>
           Sign In
         </Text>
       </Text>
@@ -121,3 +121,8 @@ const styles = StyleSheet.create({
 });
 
 export default SignUp;
+
+
+export const options = {
+  headerShown: false,
+};

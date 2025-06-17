@@ -5,7 +5,7 @@ import React from 'react';
 export default function Index() {
   const { user, loading } = useAuth();
 
-  if (loading) return null; // Wait until auth is resolved
+  if (loading) return null; 
 
   if (!user) {
     return <Redirect href="/SignIn" />;
