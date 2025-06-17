@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { useNavigation } from 'expo-router';
-import { signIn } from '@/services/AuthService';
+import { router, useNavigation } from 'expo-router';
+import { useAuth } from '@/contexts/AuthContext';
 
-export default function SignIn() {
+const SignIn = () => {
   const navigation = useNavigation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const { signIn } = useAuth();
+
   const handleSignIn = async () => {
     try {
       await signIn(email, password);
-      // Navigate to home or dashboard
+      router.push('/(tabs)')
     } catch (error: any) {
       Alert.alert("Sign In Error", error.message);
     }
@@ -33,7 +35,7 @@ export default function SignIn() {
 
       <Text style={styles.bottomText}>
         Don't have an account?{' '}
-        <Text style={styles.link} onPress={() => navigation.navigate('SignUp' as never)}>
+        <Text style={styles.link} onPress={() => router.push('/SignUp')}>
           Sign Up
         </Text>
       </Text>
@@ -52,3 +54,5 @@ const styles = StyleSheet.create({
   bottomText: { textAlign: 'center', marginTop: 24 },
   link: { color: '#19949B', fontWeight: 'bold' },
 });
+
+export default SignIn;

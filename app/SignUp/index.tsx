@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'reac
 import { useNavigation } from 'expo-router';
 import { signUp } from '@/services/AuthService';
 
-export default function SignUpScreen() {
+const SignUp = () => {
   const navigation = useNavigation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -11,10 +11,14 @@ export default function SignUpScreen() {
 
   const handleSignUp = async () => {
     try {
+      console.log("Signing up with:", name, email);
       await signUp(name, email, password);
-      // Navigate to home or sign-in
+      console.log("Sign up success!");
+      Alert.alert("Success", "Account created successfully!");
+      // Optionally navigate
     } catch (error: any) {
-      Alert.alert("Sign Up Error", error.message);
+      console.error("Sign up error:", error);
+      Alert.alert("Sign Up Error", error.message || "Something went wrong");
     }
   };
 
@@ -115,3 +119,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
+export default SignUp;

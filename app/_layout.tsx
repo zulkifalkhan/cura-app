@@ -9,13 +9,13 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import SignIn from './SignIn';
 import SignUpScreen from './SignUp';
 import OnboardingSlider from './Onboarding';
+import React from 'react';
 
 function MainStack() {
 
   return (
     <Stack
     >
-      {/* Always define screens only once */}
       <Stack.Screen
         name="(tabs)"
         options={{ headerShown: false }}
@@ -44,11 +44,11 @@ export default function RootLayout() {
 
   return (
     // <AuthProvider>
-    <>
+    <AuthProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <MainStack onDone={()=> {}} />
+        <MainStack  />
         <StatusBar style="auto" />
       </ThemeProvider>
-      </>
+      </AuthProvider>
   );
 }
