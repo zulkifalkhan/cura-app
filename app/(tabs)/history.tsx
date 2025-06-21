@@ -1,20 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { useAuth } from '@/contexts/AuthContext';
+import { db } from '@/config';
 
-// Helper to group by date
 const formatDateGroup = (timestamp: number) => {
   const now = new Date();
   const date = new Date(timestamp);
 
-  const isToday =
-    now.toDateString() === date.toDateString();
+  const isToday = now.toDateString() === date.toDateString();
   const yesterday = new Date();
   yesterday.setDate(now.getDate() - 1);
   const isYesterday = yesterday.toDateString() === date.toDateString();
@@ -24,9 +26,9 @@ const formatDateGroup = (timestamp: number) => {
   return date.toLocaleDateString();
 };
 
-const getSeverity = (text: string) => {
-  if (text.toLowerCase().includes('serious') || text.includes('hospital')) return 'critical';
-  if (text.toLowerCase().includes('monitor') || text.includes('hydrated')) return 'mild';
+const getSeverity = (classification: string) => {
+  if (classification === 'emergency') return 'critical';
+  if (classification === 'moderate') return 'mild';
   return 'normal';
 };
 
@@ -36,40 +38,59 @@ const severityColors = {
   normal: '#06D6A0',
 };
 
-// Mock data
-const mockHistory = [
-  {
-    id: '1',
-    timestamp: Date.now() - 60000,
-    userMessage: 'I have chest pain and feel dizzy.',
-    aiResponse:
-      'You might be experiencing a serious condition. Please visit the nearest hospital.',
-  },
-  {
-    id: '2',
-    timestamp: Date.now() - 360000,
-    userMessage: 'I have a mild fever since last night.',
-    aiResponse:
-      'It seems like a viral infection. Monitor your symptoms and stay hydrated.',
-  },
-  {
-    id: '3',
-    timestamp: Date.now() - 86400000,
-    userMessage: 'My throat hurts and I have a runny nose.',
-    aiResponse:
-      'You may have a cold. No emergency, rest and use home remedies.',
-  },
-];
-
-// Group by date
-const groupedHistory = mockHistory.reduce((acc, item) => {
-  const group = formatDateGroup(item.timestamp);
-  acc[group] = acc[group] || [];
-  acc[group].push(item);
-  return acc;
-}, {} as Record<string, typeof mockHistory>);
-
 const HistoryScreen = () => {
+  const { user } = useAuth();
+  const [chatHistory, setChatHistory] = useState([]);
+  const [groupedHistory, setGroupedHistory] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const q = query(
+      collection(db, 'ai_chats'),
+      where('userId', '==', user.uid)
+      // Removed orderBy to avoid index error
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const chats = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          timestamp: data.timestamp?.toDate()?.getTime() || Date.now(),
+          userMessage: data.query,
+          aiResponse: data.response,
+          classification: data.classification,
+        };
+      });
+    
+      // Sort manually by timestamp desc
+      chats.sort((a, b) => b.timestamp - a.timestamp);
+      setChatHistory(chats);
+    
+      // Group by date
+      const grouped = chats.reduce((acc, item) => {
+        const group = formatDateGroup(item.timestamp);
+        acc[group] = acc[group] || [];
+        acc[group].push(item);
+        return acc;
+      }, {});
+      setGroupedHistory(grouped);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid]);
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#19949B" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>History</Text>
@@ -81,13 +102,9 @@ const HistoryScreen = () => {
           <View>
             <Text style={styles.dateGroup}>{dateGroup}</Text>
             {groupedHistory[dateGroup].map((chatItem) => {
-              const severity = getSeverity(chatItem.aiResponse);
+              const severity = getSeverity(chatItem.classification);
               return (
-                <TouchableOpacity
-                  key={chatItem.id}
-                  style={styles.card}
-                  onPress={() => {}}
-                >
+                <TouchableOpacity key={chatItem.id} style={styles.card}>
                   <View style={styles.cardHeader}>
                     <Ionicons name="chatbubbles-outline" size={20} color="#19949B" />
                     <Text style={styles.time}>

@@ -1,5 +1,5 @@
-import { useLocalSearchParams } from 'expo-router';
-import React from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,13 +12,45 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
 
 export default function HospitalDetailsScreen() {
   const { name, distance, email } = useLocalSearchParams();
 
-  // Mock phone & address for demo - pass via params if needed
   const phone = '+1 (555) 123-4567';
   const address = '123 Main Street, Your City, Country';
+
+  const [location, setLocation] = useState(null);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
+
+  // Default: Toronto
+  const DEFAULT_COORDS = {
+    latitude: 43.65107,
+    longitude: -79.347015,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+
+        const loc = await Location.getCurrentPositionAsync({});
+        setLocation({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        });
+        setHasLocationPermission(true);
+      } catch (err) {
+        console.log('Location permission error:', err);
+      }
+    })();
+  }, []);
 
   const sendEmergencyEmail = () => {
     const subject = `Emergency Assistance Required - ${name}`;
@@ -36,19 +68,13 @@ export default function HospitalDetailsScreen() {
     });
   };
 
-  const openMaps = () => {
-    const query = encodeURIComponent(address);
-    const url =
-      Platform.OS === 'ios'
-        ? `http://maps.apple.com/?address=${query}`
-        : `geo:0,0?q=${query}`;
-    Linking.openURL(url).catch(() => {
-      Alert.alert('Failed to open map application');
-    });
-  };
-
   return (
     <View style={styles.screen}>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+  <Ionicons name="chevron-back" size={28} color="#19949B" />
+  <Text style={styles.backText}>Back</Text>
+</TouchableOpacity>
+
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <Image
           source={require('../../assets/images/hospital.jpg')}
@@ -84,17 +110,16 @@ export default function HospitalDetailsScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Location</Text>
-          <TouchableOpacity onPress={openMaps} style={styles.mapContainer}>
-            <Image
-              source={{ uri: 'https://via.placeholder.com/300x180?text=Tap+to+Open+Map' }}
-              style={styles.mapImage}
-              resizeMode="cover"
-            />
-            <View style={styles.mapOverlay}>
-              <Ionicons name="location-sharp" size={30} color="#fff" />
-              <Text style={styles.mapOverlayText}>Tap to open in Maps</Text>
-            </View>
-          </TouchableOpacity>
+          <View style={styles.mapContainer}>
+            <MapView
+              style={styles.mapView}
+              region={location || DEFAULT_COORDS}
+              showsUserLocation={hasLocationPermission}
+              showsMyLocationButton={true}
+            >
+              <Marker coordinate={location || DEFAULT_COORDS} title={name} />
+            </MapView>
+          </View>
           <Text style={styles.paragraph}>{address}</Text>
         </View>
       </ScrollView>
@@ -120,7 +145,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 20,
-    paddingBottom: 140, // Add bottom padding to avoid content under footer
+    paddingBottom: 140,
     alignItems: 'center',
   },
   banner: {
@@ -172,30 +197,13 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   mapContainer: {
-    position: 'relative',
+    width: '100%',
+    height: 180,
     borderRadius: 12,
     overflow: 'hidden',
   },
-  mapImage: {
-    width: 300,
-    height: 180,
-    borderRadius: 12,
-  },
-  mapOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(25, 148, 155, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  mapOverlayText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 16,
+  mapView: {
+    flex: 1,
   },
   footer: {
     position: 'absolute',
@@ -203,8 +211,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#fff',
-    flexDirection: 'column',  // stack vertically
-    alignItems: 'center',     // center horizontally
+    flexDirection: 'column',
+    alignItems: 'center',
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderTopWidth: 1,
@@ -220,9 +228,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 10,
-    width: '80%',             // 80% width
+    width: '80%',
     alignItems: 'center',
-    marginVertical: 7,        // space between buttons
+    marginVertical: 7,
   },
   callButton: {
     backgroundColor: '#19949B',
@@ -232,4 +240,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 16,
   },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginTop: 40,
+    gap: 4,
+  },
+  backText: {
+    fontSize: 16,
+    color: '#19949B',
+    fontWeight: '600',
+  },
+  
 });
