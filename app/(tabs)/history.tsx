@@ -179,13 +179,13 @@ const styles = StyleSheet.create({
     color: '#777',
   },
   userText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#19949B',
     marginBottom: 2,
   },
   aiText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#333',
     marginBottom: 8,
   },

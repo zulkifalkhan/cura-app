@@ -14,6 +14,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { sendEmail } from '@/services/EmailService';
+import { sendEmergencyEmailResend } from '@/services/emailServiceResend';
 
 export default function HospitalDetailsScreen() {
   const { name, distance, email } = useLocalSearchParams();
@@ -52,15 +54,47 @@ export default function HospitalDetailsScreen() {
     })();
   }, []);
 
-  const sendEmergencyEmail = () => {
-    const subject = `Emergency Assistance Required - ${name}`;
-    const body = `Hello ${name},\n\nI need urgent medical attention. Please assist immediately.\n\nLocation: ${address}`;
-    const emailUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+ const sendEmergencyEmail = async () => {
+  // const subject = `🚑 Emergency Assistance Required - ${name}`;
+  // const body = `Hello ${name},\n\nI need urgent medical attention. Please assist immediately.\n\nLocation: ${address}`;
 
-    Linking.openURL(emailUrl).catch(() => {
-      Alert.alert('Failed to open email client');
-    });
-  };
+  // const res = await sendEmail({
+  //   to: 'ayuze86insask@gmail.com', // use verified email
+  //   subject,
+  //   message: body,
+  // });
+
+  // if (res.success) {
+  //   Alert.alert('✅ Emergency Email Sent!');
+  // } else {
+  //   Alert.alert('❌ Failed to send email', res.error);
+  // }
+
+  const subject = `🚨 Emergency Assistance Required - ${name}`;
+  const html = `
+    <div style="font-family: sans-serif; color: #333;">
+      <h2>🚑 Emergency Alert from Cura</h2>
+      <p>Hello <strong>${name}</strong>,</p>
+      <p>I need urgent medical attention. Please assist immediately.</p>
+      <p><strong>📍 Location:</strong> ${address}</p>
+      <br/>
+      <p>🙏 Thank you,</p>
+      <p>💙 Cura Team</p>
+    </div>
+  `;
+
+  const result = await sendEmergencyEmailResend({
+    to: 'zulkifalkhan436@gmail.com', // or dynamic
+    subject,
+    html,
+  });
+
+  if (result.success) {
+    Alert.alert('✅ Email sent!', 'Your emergency email was sent successfully.');
+  } else {
+    Alert.alert('❌ Failed to send email', result.error);
+  }
+};
 
   const callHospital = () => {
     Linking.openURL(`tel:${phone}`).catch(() => {
