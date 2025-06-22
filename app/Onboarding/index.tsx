@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -49,11 +51,16 @@ export default function OnboardingSlider({ onDone }: { onDone: () => void }) {
   });
   const viewConfigRef = React.useRef({ viewAreaCoveragePercentThreshold: 50 });
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentIndex < slides.length - 1) {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
     } else {
-      onDone();
+      try {
+        await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+        router.push('/SignIn'); // or push to '/(tabs)' if user is already signed in
+      } catch (error) {
+        console.error("Error saving onboarding status:", error);
+      }
     }
   };
 
