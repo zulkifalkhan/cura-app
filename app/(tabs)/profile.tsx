@@ -1,22 +1,44 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Alert, Modal, TextInput, ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Modal,
+  TextInput,
+  ScrollView,
 } from 'react-native';
 import {
-  Ionicons, MaterialIcons, Feather, FontAwesome5,
+  Ionicons,
+  MaterialIcons,
+  Feather,
+  FontAwesome5,
 } from '@expo/vector-icons';
 import { logout, deleteAccount, changePassword } from '@/services/AuthService';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
 
-export default function ProfileScreen() {
-  const {user} = useAuth()
+interface ProfileOptionProps {
+  icon: React.ReactNode;
+  label: string;
+  onPress: () => void;
+  labelStyle?: object;
+}
 
-  const [showTerms, setShowTerms] = useState(false);
-  const [showPrivacy, setShowPrivacy] = useState(false);
-  const [showChangePassword, setShowChangePassword] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+interface ModalProps {
+  visible: boolean;
+  onClose: () => void;
+}
+
+export default function ProfileScreen() {
+  const { user } = useAuth();
+
+  const [showTerms, setShowTerms] = useState<boolean>(false);
+  const [showPrivacy, setShowPrivacy] = useState<boolean>(false);
+  const [showChangePassword, setShowChangePassword] = useState<boolean>(false);
+  const [currentPassword, setCurrentPassword] = useState<string>('');
+  const [newPassword, setNewPassword] = useState<string>('');
 
   const handleLogout = async () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
@@ -35,7 +57,7 @@ export default function ProfileScreen() {
           try {
             await deleteAccount();
             Alert.alert('Account deleted');
-          } catch (err) {
+          } catch (err: any) {
             Alert.alert('Error', err.message);
           }
         },
@@ -57,37 +79,41 @@ export default function ProfileScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.profileContainer}>
         <Ionicons name="person-circle" size={72} color="#19949B" />
-        <Text style={styles.name}>{user?.displayName}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
+        <Text style={styles.name}>{user?.displayName || 'Anonymous'}</Text>
+        <Text style={styles.email}>{user?.email || 'No email'}</Text>
       </View>
 
       <View style={styles.optionList}>
-      <ProfileOption
-  icon={<Feather name="edit-3" size={22} color="#19949B" />}
-  label="Edit Profile"
-  onPress={() => router.push('/EditProfile')}
-/>
+        <ProfileOption
+          icon={<Feather name="edit-3" size={22} color="#19949B" />}
+          label="Edit Profile"
+          onPress={() => router.push('/EditProfile')}
+        />
 
         <ProfileOption
           icon={<Feather name="lock" size={22} color="#19949B" />}
           label="Change Password"
           onPress={() => setShowChangePassword(true)}
         />
+
         <ProfileOption
           icon={<Feather name="file-text" size={22} color="#19949B" />}
           label="Terms of Service"
           onPress={() => setShowTerms(true)}
         />
+
         <ProfileOption
           icon={<MaterialIcons name="privacy-tip" size={22} color="#19949B" />}
           label="Privacy Policy"
           onPress={() => setShowPrivacy(true)}
         />
+
         <ProfileOption
           icon={<Ionicons name="log-out-outline" size={22} color="#19949B" />}
           label="Log Out"
           onPress={handleLogout}
         />
+
         <ProfileOption
           icon={<FontAwesome5 name="trash" size={22} color="#FF4C4C" />}
           label="Delete Account"
@@ -125,22 +151,20 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Terms of Service Modal */}
       <TermsModal visible={showTerms} onClose={() => setShowTerms(false)} />
-      {/* Privacy Policy Modal */}
       <PrivacyModal visible={showPrivacy} onClose={() => setShowPrivacy(false)} />
     </ScrollView>
   );
 }
 
-const ProfileOption = ({ icon, label, onPress, labelStyle = {} }) => (
+const ProfileOption = ({ icon, label, onPress, labelStyle = {} }: ProfileOptionProps) => (
   <TouchableOpacity style={styles.optionItem} onPress={onPress}>
     {icon}
     <Text style={[styles.optionLabel, labelStyle]}>{label}</Text>
   </TouchableOpacity>
 );
 
-const TermsModal = ({ visible, onClose }) => (
+const TermsModal = ({ visible, onClose }: ModalProps) => (
   <Modal visible={visible} transparent animationType="slide">
     <View style={styles.modalContainer}>
       <View style={styles.modalBoxScroll}>
@@ -161,7 +185,7 @@ const TermsModal = ({ visible, onClose }) => (
   </Modal>
 );
 
-const PrivacyModal = ({ visible, onClose }) => (
+const PrivacyModal = ({ visible, onClose }: ModalProps) => (
   <Modal visible={visible} transparent animationType="slide">
     <View style={styles.modalContainer}>
       <View style={styles.modalBoxScroll}>

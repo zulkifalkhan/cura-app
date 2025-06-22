@@ -1,4 +1,3 @@
-// app/screens/HealthInsightsScreen.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -20,9 +19,9 @@ import {
 import { db } from "@/config";
 import axios from "axios";
 import { useRouter } from "expo-router";
+import { healthAdvisorPrompt } from "@/AIAgents/healthAnalysisAgent";
+import { OPENAI_API_KEY } from "@/config/aiConfig";
 
-const OPENAI_API_KEY =
-  "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";
 
 const HealthInsightsScreen = () => {
   const { user } = useAuth();
@@ -80,20 +79,8 @@ Allergies: ${userData.allergies || "None"}
 Medications: ${userData.medications || "None"}
         `.trim();
 
-        const prompt = `
-${userProfileText}
+        const prompt = healthAdvisorPrompt({ userProfileText, chatHistory });
 
-Recent Health Conversations:
-${chatHistory || "No health conversations found."}
-
-As a professional and friendly AI Health Advisor 🤖❤️, analyze this user's health profile and conversation history. Provide:
-
-1. 🔍 Patterns or recurring issues in symptoms
-2. 📝 Personalized advice or suggestions
-3. 🛡️ Preventive health tips or early alerts
-
-Use motivational language with emojis where appropriate. Be brief, positive, and never alarming. Encourage the user to complete missing data if profile seems incomplete.
-        `.trim();
 
         const res = await axios.post(
           "https://api.openai.com/v1/chat/completions",

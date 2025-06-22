@@ -40,8 +40,16 @@ const severityColors = {
 
 const HistoryScreen = () => {
   const { user } = useAuth();
-  const [chatHistory, setChatHistory] = useState([]);
-  const [groupedHistory, setGroupedHistory] = useState({});
+  type ChatItem = {
+    id: string;
+    timestamp: number;
+    userMessage: string;
+    aiResponse: string;
+    classification: string;
+  };
+  
+  const [chatHistory, setChatHistory] = useState<ChatItem[]>([]);
+  const [groupedHistory, setGroupedHistory] = useState<Record<string, ChatItem[]>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,7 +58,6 @@ const HistoryScreen = () => {
     const q = query(
       collection(db, 'ai_chats'),
       where('userId', '==', user.uid)
-      // Removed orderBy to avoid index error
     );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -70,12 +77,13 @@ const HistoryScreen = () => {
       setChatHistory(chats);
     
       // Group by date
-      const grouped = chats.reduce((acc, item) => {
+      const grouped = chats.reduce((acc: Record<string, ChatItem[]>, item) => {
         const group = formatDateGroup(item.timestamp);
         acc[group] = acc[group] || [];
         acc[group].push(item);
         return acc;
       }, {});
+      
       setGroupedHistory(grouped);
       setLoading(false);
     });
@@ -151,6 +159,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingTop: 70,
     paddingHorizontal: 16,
+    paddingBottom:100
   },
   emptyContainer: {
     flex: 1,

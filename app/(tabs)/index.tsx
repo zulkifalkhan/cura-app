@@ -14,20 +14,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Audio } from "expo-av";
 import * as FileSystem from "expo-file-system";
-import OpenAI from "openai";
 import axios from "axios";
 import * as Location from "expo-location";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/config";
 import { useAuth } from "@/contexts/AuthContext";
-
-const openai = new OpenAI({
-  apiKey:
-    "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",
-});
-
-const OPENAI_API_KEY =
-  "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";
+import { recommendtationSystemPrompt } from "@/AIAgents/recommendationAgent";
+import { OPENAI_API_KEY } from "@/config/aiConfig";
 
 export default function HomeScreen() {
   const [query, setQuery] = useState("");
@@ -57,70 +50,14 @@ const {user} = useAuth()
       const geo = await Location.reverseGeocodeAsync(loc.coords);
       if (geo.length > 0) {
         const place = geo[0];
-        setCity(place.city || place.region || place.country); // fallback
+        setCity(place.city || place.region || place.country); 
       }
     })();
   }, []);
 
-//   const systemPrompt = `
-// You are a professional and friendly AI health assistant. The user is located in ${city}. 
 
-// Your job is to classify their health symptoms into one of three categories:
 
-// 1. Emergency – Advise them to visit a hospital immediately.
-//    - Provide 2–3 nearby hospitals in ${city}.
-//    - Include for each hospital:
-//      - Name
-//      - Address
-//      - If available: Contact or email
-//      - Use a clear format starting with: ## Hospital:
-//      - DO NOT include hospitals inside the main advice text, only return them after the advice section.
-
-// 2. Moderate – Suggest monitoring symptoms and visiting a doctor soon.
-// 3. Normal – Reassure the user and offer basic health advice.
-
-// Important:
-// - NEVER refuse to answer.
-// - ALWAYS end with this exact format (on a new line): Classification: Emergency / Moderate / Normal
-// - NEVER include hospital information unless classification is Emergency.
-// `;
-
-const systemPrompt = `
-You are a professional and friendly AI health assistant. The user is located in ${city}.
-
-Your job is to understand and classify the user's symptoms into one of the following categories:
-
----
-
-1. **Emergency** – If the user mentions or implies any of the following:
-   - Severe pain, difficulty breathing, chest tightness, dizziness, slurred speech, unconsciousness, seizures, confusion, or intense discomfort.
-   - If their message is emotional or vague (e.g. “I feel really bad”, “I can’t breathe properly”, “I have a lot of pain”, “I don’t know what’s happening”) but clearly suggests distress or dangerous symptoms.
-   → Classify as Emergency.
-   → After your advice, return 2–3 nearby hospitals in ${city}, with this format for each:
-     - Start each with: ## Hospital:
-     - Include Name, Address, and if available, Contact or Email.
-     - **Do not** include hospitals in the main advice paragraph. List them after.
-
-2. **Moderate** – If symptoms are not life-threatening but need medical review.
-   - Examples: mild fever, stomachache, cough, headache, fatigue, or mild infections.
-   - Recommend monitoring and seeing a doctor soon.
-
-3. **Normal** – If symptoms are very mild, common, or manageable with home care.
-   - Examples: allergies, tiredness, stress, minor cold symptoms, or anxiety without physical symptoms.
-
----
-
-### Rules:
-
-- If the user sounds vague or confused but uses words like “can’t breathe”, “really bad”, “a lot of pain”, **treat as Emergency**.
-- Do not dismiss or downplay symptoms just because the sentence is unclear.
-- Do not say "I don't understand". Assume the best interpretation and respond helpfully.
-- NEVER refuse to answer.
-- NEVER include hospital info unless the classification is Emergency.
-- ALWAYS end your response with (on a new line):
-  Classification: Emergency / Moderate / Normal
-`;
-
+  const systemPrompt = recommendtationSystemPrompt(city);
 
 
   const getGPTResponse = async (inputText: any) => {
@@ -131,7 +68,7 @@ Your job is to understand and classify the user's symptoms into one of the follo
         "https://api.openai.com/v1/chat/completions",
         {
           model: "gpt-4",
-          temperature: 0, // ✅ ensures consistent response
+          temperature: 0, 
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: inputText },
@@ -195,7 +132,7 @@ Your job is to understand and classify the user's symptoms into one of the follo
         userEmail: user?.email,
         query: inputText,
         response: cleanedText,
-        classification: riskLevel ?? "unknown",
+        classification: classification ?? "unknown",
         timestamp: serverTimestamp(),
       });
     
@@ -275,7 +212,7 @@ Your job is to understand and classify the user's symptoms into one of the follo
 
       const text = response.data.text;
       console.log("Transcribed text:", text);
-      setQuery(text); // Populate the input box with transcribed text
+      setQuery(text);
     } catch (err) {
       console.error("Transcription error:", err.response?.data || err.message);
       Alert.alert("Error", "Transcription failed.");
