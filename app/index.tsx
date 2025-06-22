@@ -1,15 +1,18 @@
+import React from 'react';
 import { Redirect } from 'expo-router';
+import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/hooks/useOnboarding';
-import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
 
 export default function Index() {
-  const { user} = useAuth();
+  const { user } = useAuth();
   const { loading: onboardingLoading, showOnboarding } = useOnboarding();
 
+  const isAuthLoading = user === undefined;
 
-  if ( onboardingLoading) {
+  const isLoading = onboardingLoading || isAuthLoading;
+
+  if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#19949B" />
@@ -21,15 +24,7 @@ export default function Index() {
     return <Redirect href="/Onboarding" />;
   }
 
-  if (user === undefined) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#19949B" />
-      </View>
-    );
-  }
-
-  if (user === null) {
+  if (!user) {
     return <Redirect href="/SignIn" />;
   }
 

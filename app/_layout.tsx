@@ -24,11 +24,11 @@ function MainStack() {
       />
       <Stack.Screen
         name="SignIn"
-        options={{ headerShown: false }}
+        options={{ headerShown: false,gestureEnabled:false }}
       />
       <Stack.Screen
         name="SignUp"
-        options={{ headerShown: false }}
+        options={{ headerShown: false, }}
       />
        <Stack.Screen
         name="UserOnboarding"

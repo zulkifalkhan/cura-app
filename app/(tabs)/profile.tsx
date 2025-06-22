@@ -15,7 +15,7 @@ import {
   Feather,
   FontAwesome5,
 } from '@expo/vector-icons';
-import { logout, deleteAccount, changePassword } from '@/services/AuthService';
+import { changePassword } from '@/services/AuthService';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
 
@@ -32,7 +32,7 @@ interface ModalProps {
 }
 
 export default function ProfileScreen() {
-  const { user } = useAuth();
+  const { user, signOut,deleteAccount} = useAuth();
 
   const [showTerms, setShowTerms] = useState<boolean>(false);
   const [showPrivacy, setShowPrivacy] = useState<boolean>(false);
@@ -43,10 +43,16 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
       { text: 'Cancel' },
-      { text: 'Logout', onPress: async () => await logout() },
+      {
+        text: 'Logout',
+        onPress: async () => {
+          await signOut();
+          router.replace('/'); // ✅ Force navigation to index.tsx to re-check auth state
+        },
+      },
     ]);
   };
-
+  
   const handleDeleteAccount = () => {
     Alert.alert('Delete Account', 'This action cannot be undone. Continue?', [
       { text: 'Cancel' },
@@ -57,6 +63,7 @@ export default function ProfileScreen() {
           try {
             await deleteAccount();
             Alert.alert('Account deleted');
+            router.replace('/'); // ✅ Same here
           } catch (err: any) {
             Alert.alert('Error', err.message);
           }
@@ -64,7 +71,6 @@ export default function ProfileScreen() {
       },
     ]);
   };
-
   const handleChangePassword = async () => {
     try {
       await changePassword(currentPassword, newPassword);
