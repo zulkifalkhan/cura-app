@@ -11,7 +11,7 @@ import { router } from 'expo-router';
 import {  doc, setDoc } from 'firebase/firestore';
 
 
-export const signUp = async (name: string, email: string, password: string) => {
+export const signUpAccount = async (name: string, email: string, password: string) => {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   const user = userCredential.user;
 

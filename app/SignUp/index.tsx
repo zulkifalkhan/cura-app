@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { router, useNavigation } from 'expo-router';
-import { signUp } from '@/services/AuthService';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SignUp = () => {
   const navigation = useNavigation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const {signUp} = useAuth()
 
   const handleSignUp = async () => {
     try {
       console.log("Signing up with:", name, email);
       await signUp(name, email, password);
-      console.log("Sign up success!");
       router.push('/UserOnbaording');
       // Optionally navigate
     } catch (error: any) {

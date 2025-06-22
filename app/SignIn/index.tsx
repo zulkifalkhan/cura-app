@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Modal } from 'react-native';
-import { router } from 'expo-router';
+import { router, useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { resetPassword } from '@/services/AuthService';
 
@@ -10,12 +10,19 @@ const SignIn = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
 
-  const { signIn } = useAuth();
+  const { user, signIn } = useAuth();
+const router = useRouter();
+
+useEffect(() => {
+  if (user) {
+    router.replace('/(tabs)');
+  }
+}, [ user]);
 
   const handleSignIn = async () => {
     try {
       await signIn(email, password);
-      router.push('/(tabs)');
+      // router.push('/(tabs)');
     } catch (error: any) {
       Alert.alert("Sign In Error", error.message);
     }

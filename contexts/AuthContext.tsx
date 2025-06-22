@@ -1,71 +1,87 @@
 // contexts/AuthContext.tsx
-import React, { createContext, useEffect, useState, useContext } from 'react';
+import React, {
+  PropsWithChildren,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import {
-  onAuthStateChanged,
-  User,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signOut,
-} from 'firebase/auth';
-import { auth } from '@/config';
-import { signIn } from '@/services/AuthService';
+  onAuthStateChanged,
+  signOut as firebaseSignOut,
+  User,
+} from "firebase/auth";
+import { auth } from "@/config"; // Your initialized Firebase auth instance
+import { signUpAccount  } from "@/services/AuthService";
 
-interface AuthContextProps {
-  user: User | null;
-  loading: boolean;
+// --- AuthContext type ---
+export type AuthContextType = {
+  user: User | null | undefined;
+  setUser: (user: User | null) => void;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-}
+  signUp: (name:string,email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
+};
 
-const AuthContext = createContext<AuthContextProps>({
-  user: null,
-  loading: true,
-  signIn: async () => {},
-  signUp: async () => {},
-  logout: async () => {},
-});
+// --- Create context ---
+const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+// --- Provider implementation ---
+export const AuthProvider: React.FC<PropsWithChildren<object>> = ({ children }) => {
+  const [user, setUser] = useState<User | null | undefined>(undefined); // `undefined` = loading state
 
+  // Listen for auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      setLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      console.log("👤 Auth state:", user?.email ?? "Not signed in");
     });
     return unsubscribe;
   }, []);
 
-  const signInHandler = async (email: string, password: string) => {
-    await signIn(email,password)
+  // --- Sign in function ---
+  const signIn = async (email: string, password: string) => {
+   const user =  await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signUpHandler = async (name: string, email: string, password: string) => {
-    const userCred = await createUserWithEmailAndPassword(auth, email, password);
-    if (auth.currentUser) {
-      // await auth.currentUser.updateProfile({ displayName: name });
-    }
+  // --- Sign up function ---
+  const signUp = async (name:string,email: string, password: string) => {
+    await signUpAccount(name, email, password);
   };
 
-  const logoutHandler = async () => {
-    await signOut(auth);
+  // --- Sign out function ---
+  const signOut = async () => {
+    await firebaseSignOut(auth);
+  };
+
+  // --- Delete account ---
+  const deleteAccount = async () => {
+    const currentUser = auth.currentUser;
+    if (currentUser) await currentUser.delete();
+  };
+
+  const authValues: AuthContextType = {
+    user,
+    setUser,
+    signIn,
+    signUp,
+    signOut,
+    deleteAccount,
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        signIn: signInHandler,
-        signUp: signUpHandler,
-        logout: logoutHandler,
-      }}
-    >
-      {children}
+    <AuthContext.Provider value={authValues}>
+      {user === undefined ? null : children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+// --- Hook to use AuthContext ---
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
+  return context;
+};

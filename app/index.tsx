@@ -5,11 +5,11 @@ import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function Index() {
-  const { user, loading: authLoading } = useAuth();
+  const { user} = useAuth();
   const { loading: onboardingLoading, showOnboarding } = useOnboarding();
 
 
-  if (authLoading || onboardingLoading) {
+  if ( onboardingLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#19949B" />
@@ -21,7 +21,15 @@ export default function Index() {
     return <Redirect href="/Onboarding" />;
   }
 
-  if (!user) {
+  if (user === undefined) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#19949B" />
+      </View>
+    );
+  }
+
+  if (user === null) {
     return <Redirect href="/SignIn" />;
   }
 
