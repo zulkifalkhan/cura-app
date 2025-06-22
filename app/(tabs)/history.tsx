@@ -94,49 +94,51 @@ const HistoryScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>History</Text>
-
-      <FlatList
-        data={Object.keys(groupedHistory)}
-        keyExtractor={(item) => item}
-        renderItem={({ item: dateGroup }) => (
-          <View>
-            <Text style={styles.dateGroup}>{dateGroup}</Text>
-            {groupedHistory[dateGroup].map((chatItem) => {
-              const severity = getSeverity(chatItem.classification);
-              return (
-                <TouchableOpacity key={chatItem.id} style={styles.card}>
-                  <View style={styles.cardHeader}>
-                    <Ionicons name="chatbubbles-outline" size={20} color="#19949B" />
-                    <Text style={styles.time}>
-                      {new Date(chatItem.timestamp).toLocaleTimeString()}
-                    </Text>
-                  </View>
-                  <Text style={styles.userText}>
-                    Symptom: {chatItem.userMessage}
-                  </Text>
-                  <Text style={styles.aiText}>Cura: {chatItem.aiResponse}</Text>
-                  <View
-                    style={[
-                      styles.severityBadge,
-                      { backgroundColor: severityColors[severity] },
-                    ]}
-                  >
-                    <Text style={styles.severityText}>
-                      {severity === 'critical'
-                        ? 'Critical'
-                        : severity === 'mild'
-                        ? 'Monitor'
-                        : 'Normal'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-
-           
-          </View>
-        )}
-      />
+  
+      {chatHistory.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>🩺 You have not interacted with Cura yet.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={Object.keys(groupedHistory)}
+          keyExtractor={(item) => item}
+          renderItem={({ item: dateGroup }) => (
+            <View>
+              <Text style={styles.dateGroup}>{dateGroup}</Text>
+              {groupedHistory[dateGroup].map((chatItem) => {
+                const severity = getSeverity(chatItem.classification);
+                return (
+                  <TouchableOpacity key={chatItem.id} style={styles.card}>
+                    <View style={styles.cardHeader}>
+                      <Ionicons name="chatbubbles-outline" size={20} color="#19949B" />
+                      <Text style={styles.time}>
+                        {new Date(chatItem.timestamp).toLocaleTimeString()}
+                      </Text>
+                    </View>
+                    <Text style={styles.userText}>Symptom: {chatItem.userMessage}</Text>
+                    <Text style={styles.aiText}>Cura: {chatItem.aiResponse}</Text>
+                    <View
+                      style={[
+                        styles.severityBadge,
+                        { backgroundColor: severityColors[severity] },
+                      ]}
+                    >
+                      <Text style={styles.severityText}>
+                        {severity === 'critical'
+                          ? 'Critical'
+                          : severity === 'mild'
+                          ? 'Monitor'
+                          : 'Normal'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 };
@@ -149,6 +151,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingTop: 70,
     paddingHorizontal: 16,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 18,
+    color: 'black',
+    textAlign: 'center',
   },
   header: {
     fontSize: 26,

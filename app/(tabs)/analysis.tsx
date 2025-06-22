@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   insights: {
-    fontSize: 16,
+    fontSize: 18,
     color: "#333",
     lineHeight: 26,
   },
