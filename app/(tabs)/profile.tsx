@@ -7,6 +7,7 @@ import {
 } from '@expo/vector-icons';
 import { logout, deleteAccount, changePassword } from '@/services/AuthService';
 import { useAuth } from '@/contexts/AuthContext';
+import { router } from 'expo-router';
 
 export default function ProfileScreen() {
   const {user} = useAuth()
@@ -61,6 +62,12 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.optionList}>
+      <ProfileOption
+  icon={<Feather name="edit-3" size={22} color="#19949B" />}
+  label="Edit Profile"
+  onPress={() => router.push('/EditProfile')}
+/>
+
         <ProfileOption
           icon={<Feather name="lock" size={22} color="#19949B" />}
           label="Change Password"

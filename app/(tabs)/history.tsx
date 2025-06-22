@@ -132,6 +132,8 @@ const HistoryScreen = () => {
                 </TouchableOpacity>
               );
             })}
+
+           
           </View>
         )}
       />
