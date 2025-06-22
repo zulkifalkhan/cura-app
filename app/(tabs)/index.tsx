@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Text,
   View,
@@ -22,45 +22,66 @@ import { useAuth } from "@/contexts/AuthContext";
 import { recommendtationSystemPrompt } from "@/AIAgents/recommendationAgent";
 import { OPENAI_API_KEY } from "@/config/aiConfig";
 
+type Hospital = {
+  id: string;
+  name: string;
+  address: string;
+  email: string;
+};
+
 export default function HomeScreen() {
   const [query, setQuery] = useState("");
-  const [aiResponse, setAiResponse] = useState(null);
-  const [riskLevel, setRiskLevel] = useState(null);
+  const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [riskLevel, setRiskLevel] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [recording, setRecording] = useState(null);
-  const [nearbyHospitals, setNearbyHospitals] = useState(null);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [nearbyHospitals, setNearbyHospitals] = useState<Hospital[]>([]);
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  const [city, setCity] = useState("Toronto");
+
   const router = useRouter();
-
-  const [location, setLocation] = useState(null);
-  const [errorMsg, setErrorMsg] = useState(null);
-
-const {user} = useAuth()
-
-
-  const [city, setCity] = useState("");
+  const { user } = useAuth();
 
   useEffect(() => {
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") return;
-
-      const loc = await Location.getCurrentPositionAsync({});
-      setLocation(loc);
-
-      const geo = await Location.reverseGeocodeAsync(loc.coords);
-      if (geo.length > 0) {
-        const place = geo[0];
-        setCity(place.city || place.region || place.country); 
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status === "granted") {
+        setLocationEnabled(true); // Hide button if already granted
+        fetchCity(); // Fetch location immediately
       }
     })();
   }, []);
+  
+  const fetchCity = async () => {
+    try {
+      const loc = await Location.getCurrentPositionAsync({});
+      const geo = await Location.reverseGeocodeAsync(loc.coords);
 
+  
+      if (geo.length > 0) {
+        const place = geo[0];
+        setCity(place.city || place.region || place.country || "Toronto");
+      }
 
+    } catch (error) {
+      console.error("Location Error:", error);
+      setCity("Toronto");
+    }
+  };
+  
+  const handleEnableLocation = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status === "granted") {
+      setLocationEnabled(true); // Hide button
+      await fetchCity(); // Update city
+    } else {
+      Alert.alert("Permission Denied", "Location access is required for nearby hospitals.");
+    }
+  };
 
-  const systemPrompt = recommendtationSystemPrompt(city);
+  const systemPrompt = recommendtationSystemPrompt(city || "Toronto");
 
-
-  const getGPTResponse = async (inputText: any) => {
+  const getGPTResponse = async (inputText: string) => {
     try {
       setLoading(true);
 
@@ -68,7 +89,7 @@ const {user} = useAuth()
         "https://api.openai.com/v1/chat/completions",
         {
           model: "gpt-4",
-          temperature: 0, 
+          temperature: 0,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: inputText },
@@ -84,41 +105,38 @@ const {user} = useAuth()
 
       const fullText = response.data.choices[0].message.content;
 
-      // 1. Extract classification
+      console.log('full:',response)
+
       const classificationMatch = fullText.match(/Classification:\s*(\w+)/i);
       const classification = classificationMatch?.[1]?.toLowerCase();
 
-      // 2. Extract and parse hospital data before cleaning
       if (classification === "emergency") {
-        const hospitalBlocks = fullText
-          .split(/## Hospital(?: \d+)?:/i)
-          .slice(1);
-
-        const parsedHospitals = hospitalBlocks.map((block, index) => {
-          const nameMatch = block.match(/- Name:\s*(.+)/i);
-          const addressMatch = block.match(/- Address:\s*(.+)/i);
-          const contactMatch = block.match(/- Contact:\s*(.+)/i);
-
+        const hospitalBlocks = fullText.split(/## Hospital(?: \d+)?:/i).slice(1);
+        const parsedHospitals = hospitalBlocks.map((block: string, index: number) => {
+          const nameMatch = block.match(/✅ Name:\s*(.+)/i);
+          const addressMatch = block.match(/✅ Address:\s*(.+)/i);
+          const emailMatch = block.match(/✅ Email:\s*(.+)/i);
+        
           return {
             id: String(index + 1),
             name: nameMatch ? nameMatch[1].trim() : `Hospital ${index + 1}`,
             address: addressMatch ? addressMatch[1].trim() : "Unknown Address",
-            email: contactMatch ? contactMatch[1].trim() : "info@example.com", // using contact as email fallback
+            email:
+              emailMatch && emailMatch[1].toLowerCase() !== "not publicly available"
+                ? emailMatch[1].trim()
+                : "cura@help.com",
           };
         });
-        console.log(parsedHospitals);
         setNearbyHospitals(parsedHospitals);
       } else {
         setNearbyHospitals([]);
       }
 
-      // 3. Clean the AI response before displaying
       let cleanedText = fullText.replace(/## Hospital[\s\S]*$/gi, "").trim();
       cleanedText = cleanedText.replace(/Classification:\s*\w+/i, "").trim();
 
       setAiResponse(cleanedText);
 
-      // 4. Risk level setting
       if (classification === "emergency") {
         setRiskLevel("critical");
       } else if (classification === "moderate") {
@@ -135,8 +153,7 @@ const {user} = useAuth()
         classification: classification ?? "unknown",
         timestamp: serverTimestamp(),
       });
-    
-    } catch (err) {
+    } catch (err: any) {
       Alert.alert("Error", "Something went wrong");
       console.error(err.response?.data || err.message);
     } finally {
@@ -157,12 +174,10 @@ const {user} = useAuth()
         playsInSilentModeIOS: true,
       });
 
-      const recording = new Audio.Recording();
-      await recording.prepareToRecordAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      await recording.startAsync();
-      setRecording(recording);
+      const rec = new Audio.Recording();
+      await rec.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      await rec.startAsync();
+      setRecording(rec);
     } catch (err) {
       Alert.alert("Error", "Microphone not available.");
       console.error(err);
@@ -174,29 +189,25 @@ const {user} = useAuth()
       await recording?.stopAndUnloadAsync();
       const uri = recording?.getURI();
       setRecording(null);
-      await transcribeAudio(uri);
+      if (uri) await transcribeAudio(uri);
     } catch (err) {
       Alert.alert("Error", "Could not process audio.");
       console.error(err);
     }
   };
 
-  const transcribeAudio = async (uri) => {
+  const transcribeAudio = async (uri: string) => {
     try {
       setLoading(true);
-
-      const fileUri = uri;
-      const fileInfo = await FileSystem.getInfoAsync(fileUri);
-      if (!fileInfo.exists) {
-        throw new Error("File not found");
-      }
+      const fileInfo = await FileSystem.getInfoAsync(uri);
+      if (!fileInfo.exists) throw new Error("File not found");
 
       const formData = new FormData();
       formData.append("file", {
-        uri: fileUri,
+        uri,
         name: "audio.m4a",
         type: "audio/m4a",
-      });
+      } as any);
       formData.append("model", "whisper-1");
 
       const response = await axios.post(
@@ -211,9 +222,8 @@ const {user} = useAuth()
       );
 
       const text = response.data.text;
-      console.log("Transcribed text:", text);
       setQuery(text);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Transcription error:", err.response?.data || err.message);
       Alert.alert("Error", "Transcription failed.");
     } finally {
@@ -225,6 +235,30 @@ const {user} = useAuth()
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Welcome to Cura AI</Text>
       <Text style={styles.subtitle}>Your personal AI healthcare agent.</Text>
+
+      {!locationEnabled && (
+  <View style={styles.locationRow}>
+    <TouchableOpacity
+      style={styles.locationButton}
+      onPress={handleEnableLocation}
+    >
+      <Ionicons name="location" size={20} color="#fff" />
+      <Text style={styles.locationButtonText}>Enable Location</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      onPress={() =>
+        Alert.alert(
+          "Why enable location?",
+          "If enabled, Cura will show you better and accurate hospital recommendations near you! 🔍🏥"
+        )
+      }
+    >
+      <Ionicons name="help-circle-outline" size={22} color="#19949B" />
+    </TouchableOpacity>
+  </View>
+)}
+
 
       <TextInput
         style={styles.input}
@@ -279,7 +313,7 @@ const {user} = useAuth()
           <FlatList
             data={nearbyHospitals}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: 100 }} // adjust as needed
+            contentContainerStyle={{ paddingBottom: 100 }}
             renderItem={({ item }) => (
               <TouchableOpacity
                 onPress={() =>
@@ -317,6 +351,25 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: "#555",
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginVertical: 10,
+  },
+  locationButton: {
+    backgroundColor: "#19949B",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  locationButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    marginLeft: 6,
   },
   input: {
     borderWidth: 1,

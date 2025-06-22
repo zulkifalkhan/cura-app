@@ -18,10 +18,8 @@ import { sendEmail } from '@/services/EmailService';
 import { sendEmergencyEmailResend } from '@/services/emailServiceResend';
 
 export default function HospitalDetailsScreen() {
-  const { name, distance, email } = useLocalSearchParams();
-
+  const { name, distance, email, address } = useLocalSearchParams();
   const phone = '+1 (555) 123-4567';
-  const address = '123 Main Street, Your City, Country';
 
   const [location, setLocation] = useState(null);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
@@ -118,7 +116,6 @@ export default function HospitalDetailsScreen() {
 
         <View style={styles.infoBox}>
           <Text style={styles.title}>{name}</Text>
-          <Text style={styles.detail}>Distance: {distance}</Text>
         </View>
 
         <View style={styles.section}>
