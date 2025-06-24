@@ -76,16 +76,17 @@ export const AuthProvider: React.FC<PropsWithChildren<object>> = ({ children }) 
   const signUp = async (name: string, email: string, password: string) => {
     try {
       // Step 1: Create user with Firebase
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const newUser = userCredential.user;
+      // const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // const newUser = userCredential.user;
   
       // Step 2: Optionally store the name (if using Firestore or custom service)
       // Example with external API (you already have `signUpAccount`)
       await signUpAccount(name, email, password);
   
       // Step 3: Update context + AsyncStorage
-      setUser(newUser);
-      await AsyncStorage.setItem("authUser", JSON.stringify(newUser));
+      // setUser(newUser);
+
+      // await AsyncStorage.setItem("authUser", JSON.stringify(newUser));
     } catch (error) {
       console.error("❌ Sign-up error:", error);
       throw error;

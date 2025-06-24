@@ -9,6 +9,7 @@ import { auth, db } from '@/config';
 import { deleteUser, signOut, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { router } from 'expo-router';
 import {  doc, setDoc } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 export const signUpAccount = async (name: string, email: string, password: string) => {
@@ -23,6 +24,11 @@ export const signUpAccount = async (name: string, email: string, password: strin
     email,
     createdAt: new Date().toISOString()
   });
+
+  router.push('./UserOnboarding')
+
+
+  await AsyncStorage.setItem("authUser", JSON.stringify(user));
 };
 
 export const signIn = async (email: string, password: string) => {
