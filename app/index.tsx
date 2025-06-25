@@ -24,7 +24,7 @@ export default function Index() {
     return <Redirect href="/Onboarding" />;
   }
 
-  if (!showOnboarding) {
+  if (!user) {
     return <Redirect href="/Onboarding" />;
   }
 
