@@ -25,8 +25,6 @@ export const signUpAccount = async (name: string, email: string, password: strin
     createdAt: new Date().toISOString()
   });
 
-  router.push('./UserOnboarding')
-
 
   await AsyncStorage.setItem("authUser", JSON.stringify(user));
 };

@@ -22,7 +22,7 @@ const SignUp = () => {
   const handleSignUp = async () => {
     try {
       await signUp(name, email, password);
-      router.push('/UserOnboarding')
+      router.push('/UserOnbaording')
     } catch (error: any) {
       Alert.alert('Sign Up Error', error.message || 'Something went wrong');
     }
@@ -67,13 +67,6 @@ const SignUp = () => {
             onChangeText={setPassword}
             secureTextEntry
           />
-
-<TouchableOpacity
-  style={[styles.button, { backgroundColor: '#ccc', marginTop: 16 }]}
-  onPress={() => router.push('/UserOnboarding')}
->
-  <Text style={styles.buttonText}>Skip to Onboarding (Test)</Text>
-</TouchableOpacity>
 
           <TouchableOpacity style={styles.button} onPress={handleSignUp}>
             <Text style={styles.buttonText}>Sign Up</Text>
