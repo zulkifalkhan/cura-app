@@ -1,128 +1,164 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { router, useNavigation } from 'expo-router';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
+import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 
 const SignUp = () => {
-  const navigation = useNavigation();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const {signUp} = useAuth()
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const { signUp } = useAuth();
 
   const handleSignUp = async () => {
     try {
-      console.log("Signing up with:", name, email);
       await signUp(name, email, password);
-      router.push('/UserOnbaording');
-      // Optionally navigate
+      router.push('/UserOnboarding')
     } catch (error: any) {
-      console.error("Sign up error:", error);
-      Alert.alert("Sign Up Error", error.message || "Something went wrong");
+      Alert.alert('Sign Up Error', error.message || 'Something went wrong');
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.welcome}>Welcome to Cura</Text>
-      <Text style={styles.subtitle}>Your personal health AI assistant</Text>
+    <KeyboardAvoidingView
+      style={styles.wrapper}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.container}>
+          <Text style={styles.title}>Create an Account 📝</Text>
 
-      <Text style={styles.title}>Create an Account</Text>
+          <Text style={styles.description}>
+            Sign up to start tracking your health and get personalized AI insights and
+            recommendations.
+          </Text>
 
-      <Text style={styles.description}>
-        Sign up to start tracking your health and get personalized AI insights and recommendations.
-      </Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Full Name"
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Email Address"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Name"
-        value={name}
-        onChangeText={setName}
-        autoCapitalize="words"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+<TouchableOpacity
+  style={[styles.button, { backgroundColor: '#ccc', marginTop: 16 }]}
+  onPress={() => router.push('/UserOnboarding')}
+>
+  <Text style={styles.buttonText}>Skip to Onboarding (Test)</Text>
+</TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-        <Text style={styles.buttonText}>Sign Up</Text>
-      </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={handleSignUp}>
+            <Text style={styles.buttonText}>Sign Up</Text>
+          </TouchableOpacity>
 
-      <Text style={styles.bottomText}>
-        Already have an account?{' '}
-        <Text style={styles.link} onPress={() => router.push('/SignIn')}>
-          Sign In
-        </Text>
-      </Text>
-    </View>
+          <Text style={styles.bottomText}>
+            Already have an account?{' '}
+            <Text style={styles.link} onPress={() => router.push('/SignIn')}>
+              Sign In
+            </Text>
+          </Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#fff' },
-  welcome: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#19949B',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#555',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  title: { fontSize: 24, fontWeight: '700', color: '#19949B', marginBottom: 12, textAlign: 'center' },
-  description: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
-    textAlign: 'center',
-    paddingHorizontal: 10,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  button: {
-    backgroundColor: '#19949B',
-    padding: 14,
-    borderRadius: 8,
-  },
-  buttonText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  bottomText: {
-    textAlign: 'center',
-    marginTop: 24,
-  },
-  link: {
-    color: '#19949B',
-    fontWeight: 'bold',
-  },
-});
+};
 
 export default SignUp;
-
 
 export const options = {
   headerShown: false,
 };
+
+const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: '#fff',
+  },
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#19949B',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  description: {
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 30,
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 10,
+  },
+  input: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 18,
+    fontSize: 16,
+    backgroundColor: '#fff',
+  },
+  button: {
+    backgroundColor: '#19949B',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    width: '100%',
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 18,
+  },
+  bottomText: {
+    textAlign: 'center',
+    marginTop: 28,
+    fontSize: 15,
+    color: '#444',
+  },
+  link: {
+    color: '#19949B',
+    fontWeight: '700',
+  },
+});

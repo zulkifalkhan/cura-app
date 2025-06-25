@@ -22,6 +22,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { recommendtationSystemPrompt } from "@/AIAgents/recommendationAgent";
 import { OPENAI_API_KEY } from "@/config/aiConfig";
 
+
 type Hospital = {
   id: string;
   name: string;
@@ -105,7 +106,6 @@ export default function HomeScreen() {
 
       const fullText = response.data.choices[0].message.content;
 
-      console.log('full:',response)
 
       const classificationMatch = fullText.match(/Classification:\s*(\w+)/i);
       const classification = classificationMatch?.[1]?.toLowerCase();
