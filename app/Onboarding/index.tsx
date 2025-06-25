@@ -1,170 +1,114 @@
-import React, { useState, useRef } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   Dimensions,
   TouchableOpacity,
   Image,
+  SafeAreaView,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
-const slides = [
-  {
-    key: '1',
-    title: 'Welcome to Cura',
-    subtitle: 'Your personal health AI assistant',
-    description:
-      'Track your health, get personalized AI insights, and take control of your wellness journey.',
-    image: 'https://via.placeholder.com/300x300?text=Cura+Welcome',
-  },
-  {
-    key: '2',
-    title: 'Smart Health Tracking',
-    subtitle: 'Monitor your daily activities',
-    description:
-      'Easily log your activities, appointments, medications, and more with an intuitive interface.',
-    image: 'https://via.placeholder.com/300x300?text=Health+Tracking',
-  },
-  {
-    key: '3',
-    title: 'Personalized Recommendations',
-    subtitle: 'AI-powered health tips',
-    description:
-      'Receive custom advice and alerts tailored to your unique health profile and goals.',
-    image: 'https://via.placeholder.com/300x300?text=AI+Recommendations',
-  },
-];
-
-export default function OnboardingSlider({ onDone }: { onDone: () => void }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const flatListRef = useRef<FlatList>(null);
-
-  const onViewRef = React.useRef(({ viewableItems }: any) => {
-    if (viewableItems.length > 0) {
-      setCurrentIndex(viewableItems[0].index);
-    }
-  });
-  const viewConfigRef = React.useRef({ viewAreaCoveragePercentThreshold: 50 });
-
-  const handleNext = async () => {
-    if (currentIndex < slides.length - 1) {
-      flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
-    } else {
-      try {
-        await AsyncStorage.setItem('hasSeenOnboarding', 'true');
-        router.push('/SignIn'); // or push to '/(tabs)' if user is already signed in
-      } catch (error) {
-        console.error("Error saving onboarding status:", error);
-      }
+export default function OnboardingScreen() {
+  const handleGetStarted = async () => {
+    try {
+      await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+      router.push('/SignIn');
+    } catch (error) {
+      console.error('Error saving onboarding status:', error);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={slides}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.key}
-        renderItem={({ item }) => (
-          <View style={[styles.slide, { width }]}>
-            <Image source={require('../../assets/images/hospital.jpg')} style={styles.image} />
-            <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.subtitle}>{item.subtitle}</Text>
-            <Text style={styles.description}>{item.description}</Text>
-          </View>
-        )}
-        onViewableItemsChanged={onViewRef.current}
-        viewabilityConfig={viewConfigRef.current}
-        ref={flatListRef}
-      />
-
-      {/* Dots Indicator */}
-      <View style={styles.dotsContainer}>
-        {slides.map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.dot,
-              currentIndex === index ? styles.activeDot : null,
-            ]}
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <Image
+            source={require('../../assets/images/hospital.jpg')}
+            style={styles.image}
           />
-        ))}
-      </View>
+          <Text style={styles.title}>Welcome to Cura 👋</Text>
+          <Text style={styles.subtitle}>Your Personal Health AI Assistant 🤖💊</Text>
 
-      <TouchableOpacity style={styles.button} onPress={handleNext}>
-        <Text style={styles.buttonText}>
-          {currentIndex === slides.length - 1 ? 'Get Started' : 'Next'}
-        </Text>
-      </TouchableOpacity>
-    </View>
+          <View style={styles.pointsContainer}>
+            <Text style={styles.point}>📈 Track your health metrics easily</Text>
+            <Text style={styles.point}>🧠 Get personalized AI recommendations</Text>
+            <Text style={styles.point}>⏱️ Stay on top of your appointments & medications</Text>
+            <Text style={styles.point}>💬 Smart insights for a better lifestyle</Text>
+            <Text style={styles.point}>🌿 Designed for your wellness journey</Text>
+          </View>
+        </ScrollView>
+
+        {/* Sticky Bottom Button */}
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.button} onPress={handleGetStarted}>
+            <Text style={styles.buttonText}>Get Started</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', backgroundColor: '#fff' },
-  slide: {
+  safeArea: {
     flex: 1,
-    paddingHorizontal: 30,
-    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    justifyContent: 'space-between',
+  },
+  content: {
     alignItems: 'center',
+    paddingTop: 40,
+    paddingHorizontal: 24,
+    paddingBottom: 20,
   },
   image: {
-    width: 250,
-    height: 250,
-    marginBottom: 30,
+    width: 200,
+    height: 200,
     borderRadius: 15,
+    marginBottom: 30,
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#19949B',
-    marginBottom: 12,
     textAlign: 'center',
+    marginBottom: 10,
   },
   subtitle: {
-    fontSize: 20,
+    fontSize: 18,
     color: '#19949B',
-    marginBottom: 24,
     textAlign: 'center',
+    marginBottom: 24,
     fontWeight: '600',
   },
-  description: {
+  pointsContainer: {
+    alignSelf: 'stretch',
+  },
+  point: {
     fontSize: 16,
-    color: '#555',
-    textAlign: 'center',
+    color: '#444',
+    marginBottom: 12,
     lineHeight: 22,
-    paddingHorizontal: 10,
   },
-  dotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#ccc',
-    marginHorizontal: 6,
-  },
-  activeDot: {
-    backgroundColor: '#19949B',
-    width: 14,
-    height: 14,
+  footer: {
+    paddingHorizontal: 24,
+    paddingBottom: 30,
+    backgroundColor: '#fff',
   },
   button: {
     backgroundColor: '#19949B',
     paddingVertical: 14,
-    marginHorizontal: 50,
     borderRadius: 25,
-    marginBottom: 40,
     alignItems: 'center',
   },
   buttonText: {
