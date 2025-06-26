@@ -1,7 +1,8 @@
 // resendEmailService.js
+import { RESEND_API_KEY } from '@/config/emailConfig';
 import axios from 'axios';
 
-const RESEND_API_KEY = 're_GHC6mY13_FVrYu8mg1YTmNU6tocvvHUZq'; // keep this safe
+const RESEND_API = RESEND_API_KEY; // keep this safe
 const RESEND_URL = 'https://api.resend.com/emails';
 
 export const sendEmergencyEmailResend = async ({ to, subject, html }) => {
@@ -16,7 +17,7 @@ export const sendEmergencyEmailResend = async ({ to, subject, html }) => {
       },
       {
         headers: {
-          Authorization: `Bearer ${RESEND_API_KEY}`,
+          Authorization: `Bearer ${RESEND_API}`,
           'Content-Type': 'application/json',
         },
       }

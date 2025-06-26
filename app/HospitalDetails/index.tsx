@@ -14,7 +14,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { sendEmail } from '@/services/EmailService';
 import { sendEmergencyEmailResend } from '@/services/emailServiceResend';
 
 export default function HospitalDetailsScreen() {
@@ -53,20 +52,7 @@ export default function HospitalDetailsScreen() {
   }, []);
 
  const sendEmergencyEmail = async () => {
-  // const subject = `🚑 Emergency Assistance Required - ${name}`;
-  // const body = `Hello ${name},\n\nI need urgent medical attention. Please assist immediately.\n\nLocation: ${address}`;
 
-  // const res = await sendEmail({
-  //   to: 'ayuze86insask@gmail.com', // use verified email
-  //   subject,
-  //   message: body,
-  // });
-
-  // if (res.success) {
-  //   Alert.alert('✅ Emergency Email Sent!');
-  // } else {
-  //   Alert.alert('❌ Failed to send email', res.error);
-  // }
 
   const subject = `🚨 Emergency Assistance Required - ${name}`;
   const html = `
@@ -82,7 +68,7 @@ export default function HospitalDetailsScreen() {
   `;
 
   const result = await sendEmergencyEmailResend({
-    to: 'zulkifalkhan436@gmail.com', // or dynamic
+    to: 'ayuze86insask@gmail.com', // or dynamic
     subject,
     html,
   });

@@ -13,6 +13,7 @@ export default {
       FIREBASE_MESSAGING_SENDER_ID: process.env.FIREBASE_MESSAGING_SENDER_ID,
       FIREBASE_APP_ID: process.env.FIREBASE_APP_ID,
       OPENAI_API_KEY: process.env.OPENAI_API_KEY, // if not already added
+      RESEND_API_KEY: process.env.RESEND_API_KEY,
     },
   },
 };

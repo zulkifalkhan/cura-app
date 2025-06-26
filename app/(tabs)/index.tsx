@@ -232,6 +232,7 @@ export default function HomeScreen() {
   };
 
   return (
+    <View style={{ flex: 1, backgroundColor: "#ffffff" }}>
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Welcome to Cura AI</Text>
       <Text style={styles.subtitle}>Your personal AI healthcare agent.</Text>
@@ -284,6 +285,20 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
+      {(query || aiResponse) && (
+  <TouchableOpacity
+    onPress={() => {
+      setQuery("");
+      setAiResponse(null);
+      setRiskLevel(null);
+    }}
+    style={styles.clearButton}
+  >
+    <Ionicons name="close-circle-outline" size={20} color="#19949B" />
+    <Text style={styles.clearText}>Clear</Text>
+  </TouchableOpacity>
+)}
+
       {loading && <ActivityIndicator size="large" color="#19949B" />}
 
       {aiResponse && (
@@ -333,6 +348,7 @@ export default function HomeScreen() {
         </>
       )}
     </ScrollView>
+    </View>
   );
 }
 
@@ -340,7 +356,7 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     paddingTop: 70,
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
     gap: 16,
   },
   title: {
@@ -455,4 +471,24 @@ const styles = StyleSheet.create({
     color: "#333",
     marginTop: 4,
   },
+  clearButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-end", // Align to right
+    backgroundColor: "#E6F3F4",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 50,
+    marginVertical: 10,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#19949B",
+  },
+  
+  clearText: {
+    color: "#19949B",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  
 });
