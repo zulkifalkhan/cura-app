@@ -116,14 +116,26 @@ const getGPTResponse = async (messages: Message[]) => {
       }
     );
 
-    const rawContent = response.data.choices[0].message.content;
-    const classificationMatch = rawContent.match(/Classification:\s*(\w+)/i);
+    const fullText = response.data.choices[0].message.content;
+
+    // 🧼 Clean response for chat UI (hide Classification & Hospital)
+    const displayContent = fullText
+      .replace(/[*_]*Classification:\s*(Emergency|Moderate|Normal|Uncertain)[*_]*/i, "")
+      .replace(/## Hospital:?[\s\S]*/i, "")
+      .trim();
+
+    const newMessage = { role: "assistant", content: displayContent };
+    setAiMessages((prev) => [...prev, newMessage]);
+
+    // 🩺 Extract classification
+    const classificationMatch = fullText.match(/Classification:\s*(\w+)/i);
     const classification = classificationMatch?.[1]?.toLowerCase();
 
-    let displayContent = rawContent;
+    setRiskLevel(classification);
 
+    // 🏥 Parse hospitals if emergency
     if (classification === "emergency") {
-      const hospitalBlocks = rawContent.split(/## Hospital(?: \d+)?:/i).slice(1);
+      const hospitalBlocks = fullText.split(/## Hospital(?: \d+)?:/i).slice(1);
       const parsedHospitals = hospitalBlocks.map((block: string, index: number) => {
         const nameMatch = block.match(/✅ Name:\s*(.+)/i);
         const addressMatch = block.match(/✅ Address:\s*(.+)/i);
@@ -138,33 +150,22 @@ const getGPTResponse = async (messages: Message[]) => {
               : "cura@help.com",
         };
       });
-
       setNearbyHospitals(parsedHospitals);
-
-      // Strip out hospital details from message
-      displayContent = rawContent.split("## Hospital")[0].trim();
-      displayContent += `\n\n🧭 Nearby emergency hospitals have been shown below.`;
     } else {
       setNearbyHospitals([]);
     }
 
-    setAiMessages((prev) => [
-      ...prev,
-      { role: "assistant", content: displayContent },
-    ]);
-    setRiskLevel(classification);
-
-  if (["emergency", "moderate", "normal"].includes(classification ?? "")) {
-  await addDoc(collection(db, "ai_chats"), {
-    userId: user?.uid,
-    userEmail: user?.email,
-    query: messages[messages.length - 1].content,
-    response: rawContent,
-    classification,
-    timestamp: serverTimestamp(),
-  });
-}
-
+    // ✅ Log only if classification is final (not Uncertain)
+    if (["emergency", "moderate", "normal"].includes(classification ?? "")) {
+      await addDoc(collection(db, "ai_chats"), {
+        userId: user?.uid,
+        userEmail: user?.email,
+        query: messages[messages.length - 1].content,
+        response: fullText,
+        classification,
+        timestamp: serverTimestamp(),
+      });
+    }
   } catch (err: any) {
     Alert.alert("Error", "Something went wrong");
     console.error(err.response?.data || err.message);
