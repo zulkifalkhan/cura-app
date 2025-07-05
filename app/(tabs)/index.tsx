@@ -1,3 +1,6 @@
+// ✅ Full updated HomeScreen.tsx with improved uncertainty logic, emergency triage, and chat-based AI assistant UI.
+// ✅ Works with voice input, handles emergency classification, and loops with follow-up if uncertain.
+
 import React, { useState, useEffect } from "react";
 import {
   Text,
@@ -19,9 +22,8 @@ import * as Location from "expo-location";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/config";
 import { useAuth } from "@/contexts/AuthContext";
-import { recommendtationSystemPrompt } from "@/AIAgents/recommendationAgent";
 import { OPENAI_API_KEY } from "@/config/aiConfig";
-
+import { recommendationSystemPrompt } from "@/AIAgents/recommendationAgent";
 
 type Hospital = {
   id: string;
@@ -30,16 +32,20 @@ type Hospital = {
   email: string;
 };
 
+type Message = {
+  role: "user" | "assistant" | "system";
+  content: string;
+};
+
 export default function HomeScreen() {
   const [query, setQuery] = useState("");
-  const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [aiMessages, setAiMessages] = useState<Message[]>([]);
   const [riskLevel, setRiskLevel] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [nearbyHospitals, setNearbyHospitals] = useState<Hospital[]>([]);
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [city, setCity] = useState("Toronto");
-
   const router = useRouter();
   const { user } = useAuth();
 
@@ -47,124 +53,126 @@ export default function HomeScreen() {
     (async () => {
       const { status } = await Location.getForegroundPermissionsAsync();
       if (status === "granted") {
-        setLocationEnabled(true); // Hide button if already granted
-        fetchCity(); // Fetch location immediately
+        setLocationEnabled(true);
+        fetchCity();
       }
     })();
   }, []);
-  
+
   const fetchCity = async () => {
     try {
       const loc = await Location.getCurrentPositionAsync({});
       const geo = await Location.reverseGeocodeAsync(loc.coords);
-
-  
       if (geo.length > 0) {
         const place = geo[0];
         setCity(place.city || place.region || place.country || "Toronto");
       }
-
     } catch (error) {
       console.error("Location Error:", error);
       setCity("Toronto");
     }
   };
-  
+
   const handleEnableLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status === "granted") {
-      setLocationEnabled(true); // Hide button
-      await fetchCity(); // Update city
+      setLocationEnabled(true);
+      await fetchCity();
     } else {
       Alert.alert("Permission Denied", "Location access is required for nearby hospitals.");
     }
   };
 
-  const systemPrompt = recommendtationSystemPrompt(city || "Toronto");
-
-  const getGPTResponse = async (inputText: string) => {
-    try {
-      setLoading(true);
-
-      const response = await axios.post(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          model: "gpt-4",
-          temperature: 0,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: inputText },
-          ],
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${OPENAI_API_KEY}`,
-          },
-        }
-      );
-
-      const fullText = response.data.choices[0].message.content;
-
-
-      const classificationMatch = fullText.match(/Classification:\s*(\w+)/i);
-      const classification = classificationMatch?.[1]?.toLowerCase();
-
-      if (classification === "emergency") {
-        const hospitalBlocks = fullText.split(/## Hospital(?: \d+)?:/i).slice(1);
-        const parsedHospitals = hospitalBlocks.map((block: string, index: number) => {
-          const nameMatch = block.match(/✅ Name:\s*(.+)/i);
-          const addressMatch = block.match(/✅ Address:\s*(.+)/i);
-          const emailMatch = block.match(/✅ Email:\s*(.+)/i);
-        
-          return {
-            id: String(index + 1),
-            name: nameMatch ? nameMatch[1].trim() : `Hospital ${index + 1}`,
-            address: addressMatch ? addressMatch[1].trim() : "Unknown Address",
-            email:
-              emailMatch && emailMatch[1].toLowerCase() !== "not publicly available"
-                ? emailMatch[1].trim()
-                : "cura@help.com",
-          };
-        });
-        setNearbyHospitals(parsedHospitals);
-      } else {
-        setNearbyHospitals([]);
-      }
-
-      let cleanedText = fullText.replace(/## Hospital[\s\S]*$/gi, "").trim();
-      cleanedText = cleanedText.replace(/Classification:\s*\w+/i, "").trim();
-
-      setAiResponse(cleanedText);
-
-      if (classification === "emergency") {
-        setRiskLevel("critical");
-      } else if (classification === "moderate") {
-        setRiskLevel("moderate");
-      } else {
-        setRiskLevel("normal");
-      }
-
-      await addDoc(collection(db, "ai_chats"), {
-        userId: user?.uid,
-        userEmail: user?.email,
-        query: inputText,
-        response: cleanedText,
-        classification: classification ?? "unknown",
-        timestamp: serverTimestamp(),
-      });
-    } catch (err: any) {
-      Alert.alert("Error", "Something went wrong");
-      console.error(err.response?.data || err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const systemPrompt = recommendationSystemPrompt(city);
 
   const submitQuery = async () => {
     if (!query.trim()) return;
-    await getGPTResponse(query);
+    const newMessages = [...aiMessages, { role: "user", content: query }];
+    setAiMessages(newMessages);
+    setQuery("");
+    await getGPTResponse(newMessages);
   };
+
+const getGPTResponse = async (messages: Message[]) => {
+  try {
+    setLoading(true);
+    const gptMessages = [
+      { role: "system", content: systemPrompt },
+      ...messages,
+    ];
+
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        model: "gpt-4",
+        temperature: 0,
+        messages: gptMessages,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+        },
+      }
+    );
+
+    const rawContent = response.data.choices[0].message.content;
+    const classificationMatch = rawContent.match(/Classification:\s*(\w+)/i);
+    const classification = classificationMatch?.[1]?.toLowerCase();
+
+    let displayContent = rawContent;
+
+    if (classification === "emergency") {
+      const hospitalBlocks = rawContent.split(/## Hospital(?: \d+)?:/i).slice(1);
+      const parsedHospitals = hospitalBlocks.map((block: string, index: number) => {
+        const nameMatch = block.match(/✅ Name:\s*(.+)/i);
+        const addressMatch = block.match(/✅ Address:\s*(.+)/i);
+        const emailMatch = block.match(/✅ Email:\s*(.+)/i);
+        return {
+          id: String(index + 1),
+          name: nameMatch ? nameMatch[1].trim() : `Hospital ${index + 1}`,
+          address: addressMatch ? addressMatch[1].trim() : "Unknown Address",
+          email:
+            emailMatch && emailMatch[1].toLowerCase() !== "not publicly available"
+              ? emailMatch[1].trim()
+              : "cura@help.com",
+        };
+      });
+
+      setNearbyHospitals(parsedHospitals);
+
+      // Strip out hospital details from message
+      displayContent = rawContent.split("## Hospital")[0].trim();
+      displayContent += `\n\n🧭 Nearby emergency hospitals have been shown below.`;
+    } else {
+      setNearbyHospitals([]);
+    }
+
+    setAiMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: displayContent },
+    ]);
+    setRiskLevel(classification);
+
+  if (["emergency", "moderate", "normal"].includes(classification ?? "")) {
+  await addDoc(collection(db, "ai_chats"), {
+    userId: user?.uid,
+    userEmail: user?.email,
+    query: messages[messages.length - 1].content,
+    response: rawContent,
+    classification,
+    timestamp: serverTimestamp(),
+  });
+}
+
+  } catch (err: any) {
+    Alert.alert("Error", "Something went wrong");
+    console.error(err.response?.data || err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const startRecording = async () => {
     try {
@@ -232,122 +240,103 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#ffffff" }}>
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Welcome to Cura AI</Text>
-      <Text style={styles.subtitle}>Your personal AI healthcare agent.</Text>
+    <View style={{ flex: 1, backgroundColor: "#fff", marginBottom: 100 }}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>Welcome to Cura AI</Text>
+        <Text style={styles.subtitle}>Your personal AI healthcare assistant.</Text>
 
-      {!locationEnabled && (
-  <View style={styles.locationRow}>
-    <TouchableOpacity
-      style={styles.locationButton}
-      onPress={handleEnableLocation}
-    >
-      <Ionicons name="location" size={20} color="#fff" />
-      <Text style={styles.locationButtonText}>Enable Location</Text>
-    </TouchableOpacity>
+        {!locationEnabled && (
+          <View style={styles.locationRow}>
+            <TouchableOpacity style={styles.locationButton} onPress={handleEnableLocation}>
+              <Ionicons name="location" size={20} color="#fff" />
+              <Text style={styles.locationButtonText}>Enable Location</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() =>
+                Alert.alert(
+                  "Why enable location?",
+                  "If enabled, Cura will show you better and accurate hospital recommendations near you! 🔍🏥"
+                )
+              }
+            >
+              <Ionicons name="help-circle-outline" size={22} color="#19949B" />
+            </TouchableOpacity>
+          </View>
+        )}
 
-    <TouchableOpacity
-      onPress={() =>
-        Alert.alert(
-          "Why enable location?",
-          "If enabled, Cura will show you better and accurate hospital recommendations near you! 🔍🏥"
-        )
-      }
-    >
-      <Ionicons name="help-circle-outline" size={22} color="#19949B" />
-    </TouchableOpacity>
-  </View>
-)}
-
-
-      <TextInput
-        style={styles.input}
-        placeholder="Describe your symptoms or ask a question..."
-        value={query}
-        onChangeText={setQuery}
-        multiline
-      />
-
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={styles.audioButton}
-          onPress={recording ? stopRecording : startRecording}
-        >
-          <Ionicons name={recording ? "stop" : "mic"} size={24} color="#fff" />
-          <Text style={styles.audioText}>
-            {recording ? "Stop" : "Speak to AI"}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.submitButton} onPress={submitQuery}>
-          <Text style={styles.submitText}>Submit</Text>
-        </TouchableOpacity>
-      </View>
-
-      {(query || aiResponse) && (
-  <TouchableOpacity
-    onPress={() => {
-      setQuery("");
-      setAiResponse(null);
-      setRiskLevel(null);
-    }}
-    style={styles.clearButton}
-  >
-    <Ionicons name="close-circle-outline" size={20} color="#19949B" />
-    <Text style={styles.clearText}>Clear</Text>
-  </TouchableOpacity>
-)}
-
-      {loading && <ActivityIndicator size="large" color="#19949B" />}
-
-      {aiResponse && (
-        <View
-          style={[
-            styles.responseCard,
-            riskLevel === "critical"
-              ? styles.critical
-              : riskLevel === "moderate"
-              ? styles.moderate
-              : styles.normal,
-          ]}
-        >
-          <Ionicons name="heart" size={20} color="#fff" />
-          <Text style={styles.responseText}>
-            {riskLevel === "critical" && "🚨 "}
-            {riskLevel === "moderate" && "🟠 "}
-            {riskLevel === "normal" && "✅ "}
-            {aiResponse}
-          </Text>
+        <View>
+          {aiMessages.map((msg, idx) => (
+            <View
+              key={idx}
+              style={msg.role === "user" ? styles.userBubble : styles.aiBubble}
+            >
+              <Text style={styles.bubbleText}>
+                {msg.content.split("\n").map((line, i) => {
+                  const isEmergency = /Classification:\s*Emergency/i.test(line);
+                  return (
+                    <Text
+                      key={i}
+                      style={isEmergency ? { color: "red", fontWeight: "bold" } : {}}
+                    >
+                      {line + "\n"}
+                    </Text>
+                  );
+                })}
+              </Text>
+            </View>
+          ))}
         </View>
-      )}
 
-      {riskLevel === "critical" && (
-        <>
-          <Text style={styles.sectionTitle}>Nearby Hospitals</Text>
-          <FlatList
-            data={nearbyHospitals}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: 100 }}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() =>
-                  router.push({ pathname: "../HospitalDetails", params: item })
-                }
-              >
-                <View style={styles.card}>
-                  <Text style={styles.cardTitle}>{item.name}</Text>
-                  <Text style={styles.cardText}>{item.address}</Text>
-                  {item.email && (
-                    <Text style={styles.cardText}>Email: {item.email}</Text>
-                  )}
-                </View>
-              </TouchableOpacity>
-            )}
-          />
-        </>
-      )}
-    </ScrollView>
+        <TextInput
+          style={styles.input}
+          placeholder="Describe your symptoms or ask a question..."
+          value={query}
+          onChangeText={setQuery}
+          multiline
+        />
+
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={styles.audioButton}
+            onPress={recording ? stopRecording : startRecording}
+          >
+            <Ionicons name={recording ? "stop" : "mic"} size={24} color="#fff" />
+            <Text style={styles.audioText}>{recording ? "Stop" : "Speak to AI"}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.submitButton} onPress={submitQuery}>
+            <Text style={styles.submitText}>Submit</Text>
+          </TouchableOpacity>
+        </View>
+
+        {loading && <ActivityIndicator size="large" color="#19949B" />}
+
+        {riskLevel === "emergency" && (
+          <>
+            <Text style={styles.sectionTitle}>Nearby Hospitals</Text>
+            <FlatList
+              data={nearbyHospitals}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ paddingBottom: 100 }}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push({ pathname: "../HospitalDetails", params: item })
+                  }
+                >
+                  <View style={styles.card}>
+                    <Text style={styles.cardTitle}>{item.name}</Text>
+                    <Text style={styles.cardText}>{item.address}</Text>
+                    {item.email && (
+                      <Text style={styles.cardText}>Email: {item.email}</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+          </>
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -356,7 +345,7 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     paddingTop: 70,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#fff",
     gap: 16,
   },
   title: {
@@ -427,27 +416,25 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
   },
-  responseCard: {
-    padding: 16,
+  userBubble: {
+    alignSelf: "flex-end",
+    backgroundColor: "#DCF8C6",
+    padding: 10,
     borderRadius: 12,
-    flexDirection: "row",
-    gap: 10,
-    alignItems: "center",
+    marginVertical: 4,
+    maxWidth: "80%",
   },
-  responseText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "500",
-    flex: 1,
+  aiBubble: {
+    alignSelf: "flex-start",
+    backgroundColor: "#E6F3F4",
+    padding: 10,
+    borderRadius: 12,
+    marginVertical: 4,
+    maxWidth: "80%",
   },
-  critical: {
-    backgroundColor: "#e74c3c",
-  },
-  moderate: {
-    backgroundColor: "#f39c12",
-  },
-  normal: {
-    backgroundColor: "#2ecc71",
+  bubbleText: {
+    fontSize: 15,
+    color: "#333",
   },
   sectionTitle: {
     fontSize: 18,
@@ -471,24 +458,4 @@ const styles = StyleSheet.create({
     color: "#333",
     marginTop: 4,
   },
-  clearButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-end", // Align to right
-    backgroundColor: "#E6F3F4",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 50,
-    marginVertical: 10,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: "#19949B",
-  },
-  
-  clearText: {
-    color: "#19949B",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  
 });
